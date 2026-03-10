@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  # Enable rewrite engine
+  RewriteEngine On
+
+  # Set the base directory
+  RewriteBase /
+
+  # Don't rewrite if it's an actual file
+  RewriteCond %{REQUEST_FILENAME} !-f
+
+  # Don't rewrite if it's an actual directory
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Rewrite all other requests to index.html
+  RewriteRule ^ index.html [QSA,L]
+</IfModule>

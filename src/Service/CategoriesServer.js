@@ -1,11 +1,7 @@
 // Client-side (CategoriesServer.js)
 import axios from 'axios';
 
-// export const  Url =  'http://localhost:8002'
-// export const  Url =  'http://192.168.1.45:8002'
-//export const  Url =  'https://makseb.onrender.com';
-export const  Url =  'https://api-statistics.makseb.fr'
-// export const  Url =  'https://maksebweb.onrender.com'
+ export const  Url = import.meta.env.VITE_API_URL || 'http://localhost:8002'
 
 
 

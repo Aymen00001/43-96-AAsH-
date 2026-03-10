@@ -1,84 +1,50 @@
 {
-  "name": "paper-dashboard-react",
-  "version": "1.3.2",
+  "name": "makseb-statistique",
+  "version": "2.0.0",
+  "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx"
+  },
   "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "@fortawesome/fontawesome-free": "^6.5.2",
-    "@material-ui/core": "^4.12.4",
-    "@material-ui/icons": "^4.11.3",
-    "@mui/icons-material": "^5.15.17",
-    "@mui/material": "^5.15.16",
-    "@react-pdf/renderer": "^3.4.4",
-    "@zxing/library": "^0.18.6",
+    "@react-pdf/renderer": "^4.3.2",
     "axios": "^1.6.8",
-    "bootstrap": "4.6.2",
-    "buffer": "^6.0.3",
-    "crypto-browserify": "^3.12.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
     "exceljs": "^4.4.0",
-    "font-awesome": "^4.7.0",
-    "image-conversion": "^2.1.1",
+    "framer-motion": "^10.16.18",
+    "i18next": "^25.8.13",
     "js-cookie": "^3.0.5",
-    "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
-    "jsqr": "^1.4.0",
     "jwt-decode": "^4.0.0",
-    "pdf-lib": "^1.17.1",
-    "perfect-scrollbar": "1.5.5",
-    "primereact": "^10.6.3",
-    "quagga": "^0.12.1",
+    "lucide-react": "^0.294.0",
+    "pdfmake": "^0.3.5",
     "react": "^18.2.0",
-    "react-date-range": "^2.0.1",
     "react-dom": "^18.2.0",
-    "react-icons": "^5.1.0",
-    "react-loading": "^2.0.3",
-    "react-multi-date-picker": "^4.4.1",
-    "react-notification-alert": "^0.0.13",
-    "react-qr-code": "^2.0.12",
-    "react-qr-reader": "^3.0.0-beta-1",
-    "react-router-dom": "6.11.1",
-    "react-scripts": "5.0.1",
-    "react-webcam": "^7.2.0",
-    "reactstrap": "8.10.0",
-    "sass": "1.62.1",
+    "react-i18next": "^16.5.4",
+    "react-router-dom": "^6.20.0",
     "socket.io-client": "^4.7.5",
-    "stream-browserify": "^3.0.0",
-    "styled-components": "^6.1.8",
-    "util": "^0.12.5",
+    "tailwind-merge": "^2.2.0",
+    "tailwindcss-animate": "^1.0.6",
     "xlsx": "^0.18.5",
-    "xlsx-style": "^0.8.13"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start",
-    "compile-sass": "node-sass src/assets/scss/paper-dashboard.scss src/assets/css/paper-dashboard.css",
-    "minify-sass": "node-sass src/assets/scss/paper-dashboard.scss src/assets/css/paper-dashboard.min.css --output-style compressed",
-    "map-sass": "node-sass src/assets/scss/paper-dashboard.scss src/assets/css/paper-dashboard.css --source-map true"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ],
-  "optionalDependencies": {
-    "typescript": "5.0.4"
-  },
-  "overrides": {
-    "svgo": "3.0.2",
-    "fsevents": "2.3.2",
-    "chokidar": "3.5.3",
-    "@babel/core": "7.18.6"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@types/react": "^18.2.30",
+    "@types/react-dom": "^18.2.13",
+    "@vitejs/plugin-react": "^4.1.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.50.0",
+    "eslint-plugin-react": "^7.33.2",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "vite": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

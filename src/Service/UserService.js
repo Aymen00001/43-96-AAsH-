@@ -5,7 +5,7 @@ const UserService = {
   GetStatFromTableReel: async (idCRM, date1, date2) => {
     try {
    
-      const response = await axios.get(`${Url}/SumData2`, {
+      const response = await axios.get(`${Url}/get-detailed-sales-summary`, {
         params: {
           idCRM: idCRM,
           date1: date1,
@@ -21,7 +21,7 @@ const UserService = {
   GetStatFromTableStats: async (idCRM, date1, date2) => {
     try {
       // Append query parameters to the URL string
-      const response = await axios.get(`${Url}/SumData`, {
+      const response = await axios.get(`${Url}/get-sales-summary`, {
         params: {
           idCRM: idCRM,
           date1: date1,
@@ -37,7 +37,7 @@ const UserService = {
   GetBaseDeDonne: async (idCRM) => {
     try {
     
-const response = await axios.get(`${Url}/GetBaseName/${idCRM}`);
+const response = await axios.get(`${Url}/get-store-name/${idCRM}`);
       return response.data;
     } catch (error) {
       throw error.response.data.error;
@@ -46,7 +46,7 @@ const response = await axios.get(`${Url}/GetBaseName/${idCRM}`);
   UpdateBaseDeDonne: async (idCRM,action) => {
     try {
       console.log(idCRM,action)
-      const response = await axios.get(`${Url}/UpdateBaseDeDonne/${idCRM}/${action}`);
+      const response = await axios.get(`${Url}/update-database/${idCRM}/${action}`);
 
       return response.data;
     } catch (error) {
