@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'Frontend/**'
-      - '.github/workflows/deploy-frontend.yml'
 
 jobs:
   build-and-deploy:
@@ -24,16 +21,13 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        working-directory: Frontend
         run: npm ci
 
       - name: Run linter
-        working-directory: Frontend
         run: npm run lint
         continue-on-error: true
 
       - name: Build project
-        working-directory: Frontend
         run: npm run build
 
       - name: Deploy to FTP
