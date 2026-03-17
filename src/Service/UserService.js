@@ -20,7 +20,7 @@ const UserService = {
   },
   GetStatFromTableStats: async (idCRM, date1, date2) => {
     try {
-      // Append query parameters to the URL string
+      // Append query parameters to the URL string ***
       const response = await axios.get(`${Url}/get-sales-summary`, {
         params: {
           idCRM: idCRM,
