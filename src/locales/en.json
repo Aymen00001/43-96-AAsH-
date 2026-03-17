@@ -195,7 +195,14 @@
     "recentActivity": "Recent Activity",
     "newOrderReceived": "New order received",
     "hoursAgo": "{{hours}} hours ago",
-    "percentOfTotal": "% of total"
+    "percentOfTotal": "% of total",
+    "searchOrders": "Search orders",
+    "paymentFilter": "Payment Method",
+    "fulfillmentFilter": "Fulfillment Mode",
+    "ticketNumber": "Ticket #",
+    "customer": "Customer",
+    "orderTotal": "Order Total",
+    "dailySummary": "Daily Summary"
   },
   "paymentMethods": {
     "cardPayment": "Card Payment",

@@ -14,7 +14,7 @@ function App() {
   });
 
   useEffect(() => {
-    // Check authentication state on app load
+    // ** Check authentication state on app load ++
     const token = Cookies.get("access_token");
     const role = Cookies.get("Role");
 
@@ -67,9 +67,9 @@ function App() {
       <Route path="/logout" element={<Logout />} />
 
       {/* Login route - Public, but redirect if already authenticated */}
-      <Route 
-        path="/login" 
-        element={authState.isAuthenticated ? <Navigate to="/" replace /> : <Login />} 
+      <Route
+        path="/login"
+        element={authState.isAuthenticated ? <Navigate to="/" replace /> : <Login />}
       />
 
       {authState.isAuthenticated ? (

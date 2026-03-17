@@ -3,8 +3,9 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
+import UserService from "../Service/UserService";
 import { Button } from "../components/ui/Button";
-import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowLeft, CreditCard, Banknote, Utensils, Truck, UtensilsCrossed, FileDown, Wallet, Package } from "lucide-react";
+import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowLeft, CreditCard, Banknote, Utensils, Truck, UtensilsCrossed, FileDown, Wallet, Package, Eye, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -73,10 +74,29 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [apiData, setApiData] = useState(null); // Store full API response for exports
 
+  // Orders table state
+  const [orders, setOrders] = useState([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersLimit, setOrdersLimit] = useState(25);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
+
+  // Filters/search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [fulfillmentFilter, setFulfillmentFilter] = useState('');
+
+  // Modal state for ticket display
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [ticketContent, setTicketContent] = useState(null);
+  const [ticketLoading, setTicketLoading] = useState(false);
+
   // Date picker state
   const today = new Date();
-  const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const [startDate, setStartDate] = useState(thirtyDaysAgo);
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const [startDate, setStartDate] = useState(yesterday);
   const [endDate, setEndDate] = useState(today);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -105,12 +125,10 @@ function Dashboard() {
     setShowDatePicker(false);
   };
 
+  // animation variants used by framer-motion; container used widely so must be defined early
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const itemVariants = {
@@ -118,7 +136,70 @@ function Dashboard() {
     visible: { opacity: 1, y: 0 },
   };
 
-  // Format date to YYYYMMDD
+  // ---------------------------------------------------------------------------
+  // Orders fetch helper
+  const fetchOrders = async () => {
+    if (!storeId) return;
+    setOrdersLoading(true);
+    setOrdersError(null);
+    try {
+      const params = {
+        idCRM: storeId,
+        date1: formatDateForAPI(startDate),
+        date2: formatDateForAPI(endDate),
+        page: ordersPage,
+        limit: ordersLimit,
+      };
+      if (searchTerm) params.search = searchTerm;
+      if (paymentFilter) params.paymentMethod = paymentFilter;
+      if (fulfillmentFilter) params.fulfillmentMode = fulfillmentFilter;
+
+      console.log("📦 [FETCH_ORDERS] params", params);
+      const response = await UserService.GetTickets(params);
+      setOrders(response.data || []);
+      setOrdersTotal(response.totalCount || 0);
+    } catch (err) {
+      console.error("[FETCH_ORDERS] error", err);
+      setOrdersError(err?.toString() || "Error fetching orders");
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // reload orders when any relevant parameter changes
+  useEffect(() => {
+    fetchOrders();
+  }, [startDate, endDate, searchTerm, paymentFilter, fulfillmentFilter, ordersPage, ordersLimit]);
+
+  // Function to fetch and display ticket receipt
+  const handleViewTicket = async (order) => {
+    setSelectedTicket(order);
+    setTicketLoading(true);
+    setShowTicketModal(true);
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || "https://api-statistics.makseb.fr";
+      const baseUrl = apiBase.replace(/\/$/, "");
+      
+      // Extract numeric ticket ID (remove "DAY-" or similar prefixes)
+      const ticketId = order.idTiquer.replace(/[^0-9]/g, '') || order.idTiquer;
+      
+      const date = order.Date || formatDateForAPI(new Date());
+      const idCRM = storeId; // Use the store ID from cookies
+      const url = `${baseUrl}/display-ticket-receipt/${idCRM}/${date}/${ticketId}`;
+      
+      console.log("📋 [VIEW_TICKET] Fetching from:", url);
+      console.log("📋 [VIEW_TICKET] Details - idCRM:", idCRM, "Date:", date, "TicketID:", ticketId);
+      const response = await axios.get(url);
+      setTicketContent(response.data);
+    } catch (err) {
+      console.error("[VIEW_TICKET] Error fetching ticket:", err);
+      setTicketContent(`<div style="padding: 20px; color: red;">Error loading ticket: ${err.message}</div>`);
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
+  // Format date for API usage (YYYYMMDD)
   const formatDateForAPI = (d) => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -133,6 +214,8 @@ function Dashboard() {
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
   };
+
+
 
 
   useEffect(() => {
@@ -798,6 +881,139 @@ function Dashboard() {
         </motion.div>
       </div>
 
+      {/* Orders listing table */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-slate-900 mb-4">{t('dashboard.orders')}</h2>
+
+        {/* filters */}
+        {ordersError && (
+          <div className="text-red-500 mb-2">{ordersError}</div>
+        )}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setOrdersPage(1); }}
+            placeholder={t('dashboard.searchOrders')}
+            className="border p-2 rounded w-full sm:w-auto"
+          />
+          <select
+            value={paymentFilter}
+            onChange={(e) => { setPaymentFilter(e.target.value); setOrdersPage(1); }}
+            className="border p-2 rounded"
+          >
+            <option value="">{t('dashboard.paymentFilter')}</option>
+            <option value="CARD">Card</option>
+            <option value="CASH">Cash</option>
+            <option value="TICKET_RESTO">Meal Voucher</option>
+          </select>
+          <select
+            value={fulfillmentFilter}
+            onChange={(e) => { setFulfillmentFilter(e.target.value); setOrdersPage(1); }}
+            className="border p-2 rounded"
+          >
+            <option value="">{t('dashboard.fulfillmentFilter')}</option>
+            <option value="SurPlace">{t('fulfillmentMethods.dineIn')}</option>
+            <option value="A_Emporter">{t('fulfillmentMethods.takeaway')}</option>
+            <option value="Livraison">{t('fulfillmentMethods.delivery')}</option>
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-3 py-2 text-left">{t('dashboard.ticketNumber')}</th>
+                <th className="px-3 py-2 text-left">{t('common.date')}</th>
+                <th className="px-3 py-2 text-left">{t('common.time')}</th>
+                <th className="px-3 py-2 text-left">{t('dashboard.customer')}</th>
+                <th className="px-3 py-2 text-right">{t('dashboard.orderTotal')}</th>
+                <th className="px-3 py-2 text-left">{t('dashboard.paymentFilter')}</th>
+                <th className="px-3 py-2 text-left">{t('dashboard.fulfillmentFilter')}</th>
+                <th className="px-3 py-2 text-center">{t('common.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ordersLoading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-4">
+                    {t('common.loading')}
+                  </td>
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-4">
+                    {t('common.noData')}
+                  </td>
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-4">
+                    {t('common.noData')}
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                    <tr key={order._id} className="even:bg-slate-50">
+                      <td className="px-3 py-2">{order.idTiquer}</td>
+                      <td className="px-3 py-2">
+                        {order.Date ? formatDateDisplay(
+                          new Date(order.Date.slice(0, 4), parseInt(order.Date.slice(4, 6)) - 1, order.Date.slice(6, 8))
+                        ) : order.Date}
+                      </td>
+                      <td className="px-3 py-2">{order.HeureTicket || '-'}</td>
+                      <td className="px-3 py-2">
+                        {order.Signature || order.customerName || '-'}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {order.TTC != null ? `€ ${order.TTC.toFixed(2)}` : ''}
+                      </td>
+                      <td className="px-3 py-2">
+                        {order.PaymentMethods
+                          ? order.PaymentMethods.map(p => p.payment_method || p.ModePaimeent).join(', ')
+                          : (order.ModePaiement && Array.isArray(order.ModePaiement) ? order.ModePaiement.map(p => p.ModePaimeent).join(', ') : order.ModePaiement || '')}
+                      </td>
+                      <td className="px-3 py-2">{order.ModeConsomation || order.ConsumptionMode || ''}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button
+                          onClick={() => handleViewTicket(order)}
+                          className="inline-flex items-center justify-center p-2 hover:bg-green-100 rounded transition-colors"
+                          title={t('common.view')}
+                        >
+                          <Eye size={18} className="text-green-600" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* pagination */}
+        <div className="flex justify-between items-center mt-2">
+          <span>
+            {t('common.page')} {ordersPage} {t('common.of')} {Math.ceil(ordersTotal / ordersLimit) || 1}
+          </span>
+          <div className="space-x-2">
+            <button
+              disabled={ordersPage <= 1}
+              onClick={() => setOrdersPage((p) => Math.max(p - 1, 1))}
+              className="px-2 py-1 bg-slate-200 rounded disabled:opacity-50"
+            >
+              {t('common.previous')}
+            </button>
+            <button
+              disabled={ordersPage >= Math.ceil(ordersTotal / ordersLimit)}
+              onClick={() => setOrdersPage((p) => p + 1)}
+              className="px-2 py-1 bg-slate-200 rounded disabled:opacity-50"
+            >
+              {t('common.next')}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Performance Section */}
       <div>
         <h2 className="text-xl font-bold text-slate-900 mb-4">{t('dashboard.productPerformance')}</h2>
@@ -902,6 +1118,89 @@ function Dashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Ticket Receipt Modal */}
+      {showTicketModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto"
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 flex items-center justify-between p-6 border-b border-slate-200 bg-white">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  {t('common.ticket')} #{selectedTicket?.idTiquer}
+                </h3>
+                <p className="text-sm text-slate-600">
+                  {selectedTicket?.Date ? formatDateDisplay(
+                    new Date(selectedTicket.Date.slice(0, 4), parseInt(selectedTicket.Date.slice(4, 6)) - 1, selectedTicket.Date.slice(6, 8))
+                  ) : ''} {selectedTicket?.HeureTicket ? `- ${selectedTicket.HeureTicket}` : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTicketModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X size={24} className="text-slate-600" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {ticketLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex flex-col items-center gap-3">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full"
+                    />
+                    <p className="text-slate-600">{t('common.loading')}</p>
+                  </div>
+                </div>
+              ) : ticketContent ? (
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <iframe
+                    srcDoc={ticketContent}
+                    className="w-full h-[500px] border-0 bg-white rounded"
+                    title="Ticket Receipt"
+                  />
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <p className="text-slate-600">{t('common.noData')}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 flex gap-2 justify-end p-6 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={() => setShowTicketModal(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 rounded-lg transition-colors font-medium"
+              >
+                {t('common.close')}
+              </button>
+              {ticketContent && (
+                <button
+                  onClick={() => {
+                    const printWindow = window.open('', '', 'height=600,width=800');
+                    printWindow.document.write(ticketContent);
+                    printWindow.document.close();
+                    printWindow.print();
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  {t('common.print')}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
         </>
       )}
     </motion.div>

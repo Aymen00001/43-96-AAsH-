@@ -52,8 +52,32 @@ const response = await axios.get(`${Url}/get-store-name/${idCRM}`);
     } catch (error) {
       throw error.response.data.error;
     }
+  },
+
+  GetTickets: async ({idCRM, date1, date2, search, paymentMethod, fulfillmentMode, page = 1, limit = 50}) => {
+    try {
+      const response = await axios.get(`${Url}/get-tickets`, {
+        params: {
+          idCRM,
+          date1,
+          date2,
+          search,
+          paymentMethod,
+          fulfillmentMode,
+          page,
+          limit
+        }
+      });
+      return response.data;
+    } catch (error) {
+      // if backend returned structured error
+      if (error.response && error.response.data) {
+        throw error.response.data.error || error.message;
+      }
+      throw error;
+    }
   }
-  
+
 };
 
 export default UserService;

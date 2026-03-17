@@ -195,7 +195,14 @@
     "recentActivity": "النشاط الأخير",
     "newOrderReceived": "تم استلام طلب جديد",
     "hoursAgo": "منذ {{hours}} ساعات",
-    "percentOfTotal": "% من الإجمالي"
+    "percentOfTotal": "% من الإجمالي",
+    "searchOrders": "ابحث عن الطلبات",
+    "paymentFilter": "طريقة الدفع",
+    "fulfillmentFilter": "وضع التوصيل",
+    "ticketNumber": "رقم التذكرة",
+    "customer": "العميل",
+    "orderTotal": "إجمالي الطلب",
+    "dailySummary": "الملخص اليومي"
   },
   "paymentMethods": {
     "cardPayment": "بطاقة بنكية",
