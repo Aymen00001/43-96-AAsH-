@@ -3,7 +3,7 @@
 ## Overview
 Your frontend has been redesigned to match Apple's premium, minimalist design aesthetic. This guide will help you maintain consistency as you develop new components and features.
 
-## Color Palette
+## Color Palette  
 
 ### Primary Colors
 - **Background**: `#ffffff` (Apple white)
