@@ -12,7 +12,9 @@ const replaceUnderscores = (str) => {
     if (str ==="Encaiser"){str="Encaissés"}
     if (str ==="Rembourser"){str="Remboursés"}
     if (str ==="Annuler"){str="Annulés"}
-    if (str ==="SurPlace"){str="Sur Place"}
+    if (str ==="Dine-in"){str="Dine-in"}
+    if (str ==="Takeaway"){str="Takeaway"}
+    if (str ==="Delivery"){str="Delivery"}
     return str.replace(/_/g, " ");
 };
 

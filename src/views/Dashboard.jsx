@@ -21,7 +21,6 @@ function Dashboard() {
   const storeId = Cookies.get("idCRM");
   const storeName = Cookies.get("Name");
 
-  console.log(`🔄 [DASHBOARD_RENDER] Render #${renderCount} | StoreID: ${storeId} | Time: ${new Date().toLocaleTimeString()}`);
 
   // Debug logging
   useEffect(() => {
@@ -51,9 +50,9 @@ function Dashboard() {
 
   // Fulfillment method translations and icons
   const fulfillmentMethodLabels = {
-    "SurPlace": { label: t('fulfillmentMethods.dineIn'), icon: Users, color: "text-indigo-600", bgColor: "bg-indigo-50", borderColor: "border-indigo-200", barColor: "bg-indigo-600" },
-    "A_Emporter": { label: t('fulfillmentMethods.takeaway'), icon: ShoppingBag, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" },
-    "Livraison": { label: t('fulfillmentMethods.delivery'), icon: Truck, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200", barColor: "bg-red-600" }
+    "Dine-in": { label: t('fulfillmentMethods.dineIn'), icon: Users, color: "text-indigo-600", bgColor: "bg-indigo-50", borderColor: "border-indigo-200", barColor: "bg-indigo-600" },
+    "Takeaway": { label: t('fulfillmentMethods.takeaway'), icon: ShoppingBag, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" },
+    "Delivery": { label: t('fulfillmentMethods.delivery'), icon: Truck, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200", barColor: "bg-red-600" }
   };
   
   const [stats, setStats] = useState({
@@ -282,43 +281,79 @@ function Dashboard() {
       try {
         // Fetch sales summary (includes revenue and payment methods breakdown)
         const salesUrl = `${baseUrl}/get-sales-summary?idCRM=${encodeURIComponent(storeId)}&date1=${date1}&date2=${date2}`;
-        console.log(`[API_CALL:${callId}] 📤 Making request to: ${salesUrl}`);
+        console.log(`\n${'='.repeat(80)}`);
+        console.log(`[API_CALL:${callId}] 📤 REQUEST INITIATED`);
+        console.log(`  URL: ${salesUrl}`);
+        console.log(`  Store ID: ${storeId}`);
+        console.log(`  Date Range: ${date1} to ${date2}`);
         
         const startTime = performance.now();
-        console.log(`[API_CALL:${callId}] Request timestamp: ${new Date().toLocaleTimeString()}`);
+        console.log(`[API_CALL:${callId}] Request sent at: ${new Date().toLocaleTimeString()}`);
+        
         const salesRes = await axios.get(salesUrl);
+        
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
         
-        console.log(`[API_CALL:${callId}] 📥 Response received in ${duration}ms`);
-        console.log(`[API_CALL:${callId}] Status: ${salesRes.status}`);
-        console.log(`[API_CALL:${callId}] Response timestamp: ${new Date().toLocaleTimeString()}`);
-        console.log(`[API_CALL:${callId}] Processing response data...`);
+        console.log(`\n[API_CALL:${callId}] 📥 RESPONSE RECEIVED`);
+        console.log(`  Duration: ${duration}ms`);
+        console.log(`  HTTP Status: ${salesRes.status}`);
+        console.log(`  Response timestamp: ${new Date().toLocaleTimeString()}`);
+        console.log(`  Content-Type: ${salesRes.headers['content-type']}`);
+        
+        console.log(`\n[API_CALL:${callId}] Full response body:`);
+        console.log(JSON.stringify(salesRes.data, null, 2));
+        
         const salesData = salesRes.data?.data;
+        console.log(`\n[API_CALL:${callId}] Extracted salesData (data.data):`);
+        console.log(`  Type: ${typeof salesData}`);
+        console.log(`  Is null? ${salesData === null}`);
+        console.log(`  Is undefined? ${salesData === undefined}`);
+        if (salesData) {
+          console.log(`  Keys: ${Object.keys(salesData).join(', ')}`);
+          console.log(`  Full value:`, salesData);
+        }
 
         if (!salesData) {
+          console.error(`[API_CALL:${callId}] ❌ NO DATA FIELD IN RESPONSE`);
           throw new Error("No data field in response");
         }
 
+        // Extract ChiffreAffaire FIRST - log it immediately
+        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING CHIFFREAFFAIRE`);
+        const chiffreAffaire = salesData.ChiffreAffaire;
+        console.log(`  Exists? ${!!chiffreAffaire}`);
+        console.log(`  Type: ${typeof chiffreAffaire}`);
+        if (chiffreAffaire) {
+          console.log(`  Keys: ${Object.keys(chiffreAffaire).join(', ')}`);
+          console.log(`  Total_TTC: ${chiffreAffaire.Total_TTC} (type: ${typeof chiffreAffaire.Total_TTC})`);
+          console.log(`  Total_HT: ${chiffreAffaire.Total_HT} (type: ${typeof chiffreAffaire.Total_HT})`);
+          console.log(`  Total_TVA: ${chiffreAffaire.Total_TVA} (type: ${typeof chiffreAffaire.Total_TVA})`);
+          console.log(`  Full value:`, chiffreAffaire);
+        }
+
         // Extract and analyze product data
-        console.log(`[API_CALL:${callId}] Analyzing sales data...`);
-        console.log(`[API_CALL:${callId}]    salesData keys:`, Object.keys(salesData));
-        console.log(`[API_CALL:${callId}]    ProduitDetailler exists?`, !!salesData.ProduitDetailler);
-        console.log(`[API_CALL:${callId}]    ProduitDetailler value:`, salesData.ProduitDetailler);
+        console.log(`\n[API_CALL:${callId}] 🔍 ANALYZING SALES DATA`);
+        console.log(`  All keys in salesData: ${Object.keys(salesData).join(', ')}`);
+        console.log(`  ProduitDetailler exists? ${!!salesData.ProduitDetailler}`);
+        if (salesData.ProduitDetailler) {
+          console.log(`  ProduitDetailler type: ${typeof salesData.ProduitDetailler}`);
+          console.log(`  ProduitDetailler keys: ${Object.keys(salesData.ProduitDetailler).join(', ')}`);
+          console.log(`  Full ProduitDetailler:`, salesData.ProduitDetailler);
+        }
         
         const productData = {};
 
         // Check for product details in the response
         if (salesData.ProduitDetailler && typeof salesData.ProduitDetailler === 'object') {
-          console.log(`[API_CALL:${callId}] Product details found`);
-          console.log(`[API_CALL:${callId}] Processing ${Object.keys(salesData.ProduitDetailler).length} products`);
+          console.log(`\n[API_CALL:${callId}] ✅ Product details found - processing ${Object.keys(salesData.ProduitDetailler).length} products`);
           
           Object.entries(salesData.ProduitDetailler).forEach(([productName, details], idx) => {
-            console.log(`[API_CALL:${callId}] Product ${idx}: "${productName}"`);
-            console.log(`[API_CALL:${callId}] Details available:`, !!details);
+            console.log(`  Product ${idx + 1}: "${productName}"`);
+            console.log(`    Details: ${JSON.stringify(details)}`);
             
             if (details && typeof details === 'object') {
-              console.log(`[API_CALL:${callId}]      Details keys:`, Object.keys(details));
+              console.log(`    Details keys: ${Object.keys(details).join(', ')}`);
               
               // Extract amount - try multiple field names
               let amount = 0;
@@ -380,54 +415,83 @@ function Dashboard() {
         const paymentMethods = {};
         let totalPaymentAmount = 0;
         
-        console.log(`[API_CALL:${callId}] Processing payment methods...`);
-        if (salesData.modePaiement && typeof salesData.modePaiement === 'object') {
+        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING PAYMENT METHODS`);
+        console.log(`  modePaiement exists? ${!!salesData.modePaiement}`);
+        if (salesData.modePaiement) {
+          console.log(`  modePaiement type: ${typeof salesData.modePaiement}`);
+          console.log(`  modePaiement keys: ${Object.keys(salesData.modePaiement).join(', ')}`);
+          console.log(`  Full modePaiement:`, salesData.modePaiement);
+          
           Object.entries(salesData.modePaiement).forEach(([method, amount]) => {
             const cleanAmount = parseFloat(amount) || 0;
             paymentMethods[method] = {
               amount: cleanAmount,
-              count: 0, // Not available in this endpoint
-              average: 0, // Not available in this endpoint
+              count: 0,
+              average: 0,
             };
             totalPaymentAmount += cleanAmount;
+            console.log(`    ${method}: ${cleanAmount}`);
           });
-          console.log(`[API_CALL:${callId}] Payment methods found: ${Object.keys(paymentMethods).length}`);
+          console.log(`  Total payment methods: ${Object.keys(paymentMethods).length}`);
+          console.log(`  Total payment amount: ${totalPaymentAmount}`);
         }
 
         // Build fulfillment methods breakdown from modeConsommation
         const fulfillmentMethods = {};
-        console.log(`[API_CALL:${callId}] Processing fulfillment methods...`);
+        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING FULFILLMENT METHODS`);
+        console.log(`  modeConsommation exists? ${!!salesData.modeConsommation}`);
         if (salesData.modeConsommation && typeof salesData.modeConsommation === 'object') {
+          console.log(`  modeConsommation type: ${typeof salesData.modeConsommation}`);
+          console.log(`  modeConsommation keys: ${Object.keys(salesData.modeConsommation).join(', ')}`);
+          console.log(`  Full modeConsommation:`, salesData.modeConsommation);
+          
           Object.entries(salesData.modeConsommation).forEach(([method, amount]) => {
             const cleanAmount = parseFloat(amount) || 0;
             fulfillmentMethods[method] = {
               amount: cleanAmount,
             };
+            console.log(`    ${method}: ${cleanAmount}`);
           });
-          console.log(`[API_CALL:${callId}] Fulfillment methods found: ${Object.keys(fulfillmentMethods).length}`);
+          console.log(`  Total fulfillment methods: ${Object.keys(fulfillmentMethods).length}`);
         }
 
         // Extract total revenue from ChiffreAffaire
+        console.log(`\n[API_CALL:${callId}] 💰 COMPUTING REVENUE`);
         const totalTTC = salesData.ChiffreAffaire?.Total_TTC || 0;
         const totalHT = salesData.ChiffreAffaire?.Total_HT || 0;
         const devise = salesData.devise || "€";
+        
+        console.log(`  Raw Total_TTC: ${totalTTC} (type: ${typeof totalTTC})`);
+        console.log(`  Raw Total_HT: ${totalHT} (type: ${typeof totalHT})`);
+        console.log(`  Currency: ${devise}`);
+        
         const totalRevenue = `${parseFloat(totalTTC).toFixed(2)}${devise}`;
+        console.log(`  Formatted Total Revenue: ${totalRevenue}`);
         
         // Calculate taxes (TTC - HT)
         const taxAmount = parseFloat(totalTTC) - parseFloat(totalHT);
         const totalTaxes = `${parseFloat(taxAmount).toFixed(2)}${devise}`;
         const totalExcludingTax = `${parseFloat(totalHT).toFixed(2)}${devise}`;
         
+        console.log(`  Tax Amount: ${taxAmount}`);
+        console.log(`  Formatted Taxes: ${totalTaxes}`);
+        console.log(`  Formatted Tax Exclusive: ${totalExcludingTax}`);
+        
         // Count total orders from payment methods or etat tiquet
-        const totalOrdersCount = Object.values(paymentMethods).reduce((sum, method) => sum + (method.count || 0), 0) || 
-                                 salesData.EtatTiquer?.Encaiser || 0;
+        console.log(`\n[API_CALL:${callId}] 📊 COMPUTING ORDER COUNT`);
+        const etatTiquerEncaiser = salesData.EtatTiquer?.Encaiser || 0;
+        console.log(`  EtatTiquer.Encaiser: ${etatTiquerEncaiser}`);
+        
+        const totalOrdersCount = Object.values(paymentMethods).reduce((sum, method) => sum + (method.count || 0), 0) || etatTiquerEncaiser;
+        console.log(`  Total Orders Count: ${totalOrdersCount}`);
 
-        console.log(`[DASHBOARD] Extracted data - Revenue: ${totalRevenue}`);
-        console.log(`[DASHBOARD] Taxes: ${totalTaxes}`);
-        console.log(`[DASHBOARD] Tax Exclusive: ${totalExcludingTax}`);
-        console.log(`[DASHBOARD] Total products: ${Object.keys(productData).length}`);
-        console.log(`[DASHBOARD] Payment methods: ${Object.keys(paymentMethods).length}`);
-        console.log(`[DASHBOARD] Fulfillment methods: ${Object.keys(fulfillmentMethods).length}`);
+        console.log(`\n[API_CALL:${callId}] 📋 EXTRACTED DATA SUMMARY`);
+        console.log(`  Revenue: ${totalRevenue}`);
+        console.log(`  Taxes: ${totalTaxes}`);
+        console.log(`  Tax Exclusive: ${totalExcludingTax}`);
+        console.log(`  Total products: ${Object.keys(productData).length}`);
+        console.log(`  Payment methods: ${Object.keys(paymentMethods).length}`);
+        console.log(`  Fulfillment methods: ${Object.keys(fulfillmentMethods).length}`);
 
         const mapped = {
           totalStores: storeId ? 1 : stats.totalStores,
@@ -442,26 +506,43 @@ function Dashboard() {
           devise: devise,
         };
 
-        console.log(`[DASHBOARD] Stats updated`);
-        console.log(`[API_CALL:${callId}] Calling setStats with: totalSales=${totalRevenue}, totalTaxes=${totalTaxes}`);
+        console.log(`\n[API_CALL:${callId}] 📌 MAPPED STATS OBJECT`);
+        console.log(JSON.stringify(mapped, null, 2));
+
+        console.log(`\n[API_CALL:${callId}] 🔐 CALLING STATE UPDATES`);
+        console.log(`  Calling setStats with:`);
+        console.log(`    totalSales: ${mapped.totalSales}`);
+        console.log(`    taxes: ${mapped.taxes}`);
+        console.log(`    taxExclusive: ${mapped.taxExclusive}`);
+        console.log(`    totalOrders: ${mapped.totalOrders}`);
+        
         setStats((s) => { 
           const newStats = { ...s, ...mapped };
-          console.log(`[API_CALL:${callId}] setStats callback executed`);
+          console.log(`\n[API_CALL:${callId}] ✅ setStats callback executed`);
+          console.log(`  Previous state totalSales: ${s.totalSales}`);
+          console.log(`  New state totalSales: ${newStats.totalSales}`);
+          console.log(`  Previous state taxes: ${s.taxes}`);
+          console.log(`  New state taxes: ${newStats.taxes}`);
           return newStats;
         });
+        
         console.log(`[API_CALL:${callId}] Calling setApiData`);
-        setApiData(salesData); // Store full API response for PDF/Excel export
-        console.log(`[API_CALL:${callId}] State updates queued`);
+        setApiData(salesData);
+        console.log(`[API_CALL:${callId}] ✅ State updates queued`);
+        console.log(`${'='.repeat(80)}\n`);
       } catch (err) {
-        console.error(`[API_CALL:${callId}] ❌ Error caught:`, err.message);
-        console.error(`[API_CALL:${callId}] Error code: ${err.code}`);
-        console.error(`[API_CALL:${callId}] Response status: ${err.response?.status}`);
+        console.error(`\n[API_CALL:${callId}] ❌ ERROR CAUGHT`);
+        console.error(`  Message: ${err.message}`);
+        console.error(`  Code: ${err.code}`);
+        console.error(`  Response status: ${err.response?.status}`);
+        console.error(`  Full error:`, err);
         console.log(`[API_CALL:${callId}] Calling setError`);
         setError(`Failed to load store metrics: ${err.message}`);
         console.log(`[API_CALL:${callId}] Calling setDailySalesData with empty array`);
-        setDailySalesData([]); // Clear chart data on error
+        setDailySalesData([]);
+        console.log(`${'='.repeat(80)}\n`);
       } finally {
-        console.log(`[API_CALL:${callId}] Finally block reached - calling setLoading(false)`);
+        console.log(`[API_CALL:${callId}] Finally block - calling setLoading(false)`);
         setLoading(false);
         console.groupEnd();
       }
@@ -913,9 +994,9 @@ function Dashboard() {
             className="border p-2 rounded"
           >
             <option value="">{t('dashboard.fulfillmentFilter')}</option>
-            <option value="SurPlace">{t('fulfillmentMethods.dineIn')}</option>
-            <option value="A_Emporter">{t('fulfillmentMethods.takeaway')}</option>
-            <option value="Livraison">{t('fulfillmentMethods.delivery')}</option>
+            <option value="Dine-in">{t('fulfillmentMethods.dineIn')}</option>
+            <option value="Takeaway">{t('fulfillmentMethods.takeaway')}</option>
+            <option value="Delivery">{t('fulfillmentMethods.delivery')}</option>
           </select>
         </div>
 

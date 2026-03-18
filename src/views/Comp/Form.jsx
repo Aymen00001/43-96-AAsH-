@@ -79,7 +79,7 @@ function Form({ key1, devise, value, StartDate, EndDate }) {
   if (str ==="Encaiser"){str="Encaissés"}
   if (str ==="Rembourser"){str="Remboursés"}
   if (str ==="Annuler"){str="Annulés"}
-  if (str ==="SurPlace"){str="Sur Place"}
+  if (str ==="Dine-in"){str="Dine-in"}
     return str.replace(/_/g, " ");
   };
 
@@ -106,12 +106,12 @@ function Form({ key1, devise, value, StartDate, EndDate }) {
 
 
     //MODE CONSOMATIONS
-    else if (key1 === "SurPlace") {
+    else if (key1 === "Dine-in") {
       return <RestaurantMenuIcon style={{ width: "55px", height: "55px", color: "74CED6" }} />;
     }
-    else if (key1 === "A_Emporter") {
+    else if (key1 === "Takeaway") {
       return <DeliveryDiningIcon style={{ width: "55px", height: "55px", color: "5990A8" }} />;
-    } else if (key1 === "Livraison") {
+    } else if (key1 === "Delivery") {
       return <DeliveryDiningIcon style={{ width: "55px", height: "55px", color: "6E7290" }} />;
     }
     // C.A
