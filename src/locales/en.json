@@ -205,6 +205,7 @@
     "dailySummary": "Daily Summary"
   },
   "paymentMethods": {
+    "card": "Card",
     "cardPayment": "Card Payment",
     "cash": "Cash",
     "mealVoucher": "Meal Voucher",
@@ -212,6 +213,9 @@
     "bankTransfer": "Bank Transfer",
     "mobileWallet": "Mobile Wallet",
     "check": "Check",
+    "fidelityPoints": "Fidelity Points",
+    "storeCredit": "Store Credit",
+    "corporateAccount": "Corporate Account",
     "cryptocurrency": "Cryptocurrency",
     "CARTE_BANCAIRE": "Credit Card",
     "ESPECE": "Cash",

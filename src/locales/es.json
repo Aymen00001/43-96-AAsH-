@@ -203,6 +203,7 @@
     "percentOfTotal": "% del total"
   },
   "paymentMethods": {
+    "card": "Tarjeta",
     "cardPayment": "Pago con Tarjeta",
     "cash": "Efectivo",
     "mealVoucher": "Vale de Comida",
@@ -210,6 +211,9 @@
     "bankTransfer": "Transferencia Bancaria",
     "mobileWallet": "Billetera Móvil",
     "check": "Cheque",
+    "fidelityPoints": "Puntos de Fidelidad",
+    "storeCredit": "Crédito de Tienda",
+    "corporateAccount": "Cuenta Corporativa",
     "cryptocurrency": "Criptomoneda",
     "CARTE_BANCAIRE": "Tarjeta de Crédito",
     "ESPECE": "Efectivo",

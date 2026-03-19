@@ -14,6 +14,10 @@ import generateExcel from "../components/generateExcel";
 
 let renderCount = 0;
 
+// Feature: Shift Number from Z Field
+// Displays shift numbers from database Z field with fallback to closureNumber
+// Logging enabled for: shift filtering, field priority, and table display
+
 function Dashboard() {
   renderCount++;
   const { t, i18n } = useTranslation();
@@ -22,37 +26,31 @@ function Dashboard() {
   const storeName = Cookies.get("Name");
 
 
-  // Debug logging
-  useEffect(() => {
-    console.log("🚀 [DASHBOARD_INIT] Component mounting for store:", storeId);
-    console.log("[DASHBOARD_INIT] Store Name:", storeName || "N/A");
-    
-    // Check all cookies
-    const allCookies = document.cookie.split("; ").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=");
-      acc[key] = value;
-      return acc;
-    }, {});
-    
-    console.log("[DASHBOARD] Session data available:", Object.keys(allCookies).length > 0);
-    if (!storeId) {
-      console.warn("[DASHBOARD] Warning: Store ID not found");
-    }
-  }, []);
 
-  // Payment method translations and icons
+
+  // Helper to avoid showing raw translation keys if a translation is missing
+  const translateOrFallback = (key, fallback) => {
+    const translated = t(key);
+    return translated && translated !== key ? translated : fallback;
+  };
+
+  // Payment method configuration (English keys, translated only on display)
+  // All payment methods use English keys for validation and API communication
   const paymentMethodLabels = {
-    "CARTE_BANCAIRE": { label: t('paymentMethods.cardPayment'), icon: CreditCard, color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200", barColor: "bg-blue-600" },
-    "ESPECES": { label: t('paymentMethods.cash'), icon: Banknote, color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200", barColor: "bg-green-600" },
-    "TICKET_RESTO": { label: t('paymentMethods.mealVoucher'), icon: UtensilsCrossed, color: "text-orange-600", bgColor: "bg-orange-50", borderColor: "border-orange-200", barColor: "bg-orange-600" },
-    "AVOIR": { label: t('paymentMethods.AVOIR'), icon: Wallet, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" }
+    "CARD": { label: translateOrFallback('paymentMethods.card', 'Card'), icon: CreditCard, color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200", barColor: "bg-blue-600" },
+    "CASH": { label: translateOrFallback('paymentMethods.cash', 'Cash'), icon: Banknote, color: "text-green-600", bgColor: "bg-green-50", borderColor: "border-green-200", barColor: "bg-green-600" },
+    "MEAL_VOUCHER": { label: translateOrFallback('paymentMethods.mealVoucher', 'Meal Voucher'), icon: UtensilsCrossed, color: "text-orange-600", bgColor: "bg-orange-50", borderColor: "border-orange-200", barColor: "bg-orange-600" },
+    "CHECK": { label: translateOrFallback('paymentMethods.check', 'Check'), icon: Wallet, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200", barColor: "bg-amber-600" },
+    "FIDELITY_POINTS": { label: translateOrFallback('paymentMethods.fidelityPoints', 'Fidelity Points'), icon: Wallet, color: "text-rose-600", bgColor: "bg-rose-50", borderColor: "border-rose-200", barColor: "bg-rose-600" },
+    "STORE_CREDIT": { label: translateOrFallback('paymentMethods.storeCredit', 'Store Credit'), icon: Wallet, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" },
+    "CORPORATE_ACCOUNT": { label: translateOrFallback('paymentMethods.corporateAccount', 'Corporate Account'), icon: Wallet, color: "text-indigo-600", bgColor: "bg-indigo-50", borderColor: "border-indigo-200", barColor: "bg-indigo-600" }
   };
 
   // Fulfillment method translations and icons
   const fulfillmentMethodLabels = {
-    "Dine-in": { label: t('fulfillmentMethods.dineIn'), icon: Users, color: "text-indigo-600", bgColor: "bg-indigo-50", borderColor: "border-indigo-200", barColor: "bg-indigo-600" },
-    "Takeaway": { label: t('fulfillmentMethods.takeaway'), icon: ShoppingBag, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" },
-    "Delivery": { label: t('fulfillmentMethods.delivery'), icon: Truck, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200", barColor: "bg-red-600" }
+    "Dine-in": { label: translateOrFallback('fulfillmentMethods.dineIn', 'Dine In'), icon: Users, color: "text-indigo-600", bgColor: "bg-indigo-50", borderColor: "border-indigo-200", barColor: "bg-indigo-600" },
+    "Takeaway": { label: translateOrFallback('fulfillmentMethods.takeaway', 'Takeaway'), icon: ShoppingBag, color: "text-purple-600", bgColor: "bg-purple-50", borderColor: "border-purple-200", barColor: "bg-purple-600" },
+    "Delivery": { label: translateOrFallback('fulfillmentMethods.delivery', 'Delivery'), icon: Truck, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200", barColor: "bg-red-600" }
   };
   
   const [stats, setStats] = useState({
@@ -85,6 +83,8 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [fulfillmentFilter, setFulfillmentFilter] = useState('');
+  const [shiftFilter, setShiftFilter] = useState('');
+  const [availableShifts, setAvailableShifts] = useState([]);
 
   // Modal state for ticket display
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -92,7 +92,7 @@ function Dashboard() {
   const [ticketContent, setTicketContent] = useState(null);
   const [ticketLoading, setTicketLoading] = useState(false);
 
-  // Date picker state
+  // Date picker state (dashboard metrics)
   const today = new Date();
   const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
   const [startDate, setStartDate] = useState(yesterday);
@@ -100,6 +100,9 @@ function Dashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
+
+  // Date filter for the orders table (single date)
+  const [orderDate, setOrderDate] = useState(today);
 
   // Simple date change handlers (no auto-trigger)
   const handleStartDateChange = (e) => {
@@ -114,6 +117,137 @@ function Dashboard() {
 
   // Add ref to track if initialLoad
   const initialLoad = useRef(true);
+
+  // Normalize payment methods from API (French to English keys)
+  const normalizePaymentMethod = (methodValue) => {
+    if (!methodValue) return methodValue;
+
+    const normalized = String(methodValue)
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[-\s]+/g, '_')
+      .toUpperCase();
+
+    // Mapping from API values (French/mixed) to English keys
+    const paymentMethodMap = {
+      'CARTE_BANCAIRE': 'CARD',
+      'CARD': 'CARD',
+      'ESPECE': 'CASH',
+      'ESPECES': 'CASH',
+      'CASH': 'CASH',
+      'TICKET_RESTO': 'MEAL_VOUCHER',
+      'MEAL_VOUCHER': 'MEAL_VOUCHER',
+      'CHÈQUE': 'CHECK',
+      'CHEQUE': 'CHECK',
+      'CHECK': 'CHECK',
+      'POINTS_FIDÉLITÉ': 'FIDELITY_POINTS',
+      'POINTS_FIDELITE': 'FIDELITY_POINTS',
+      'FIDELITY_POINTS': 'FIDELITY_POINTS',
+      'AVOIR': 'STORE_CREDIT',
+      'STORE_CREDIT': 'STORE_CREDIT',
+      'CLIENT_EN_COMPTE': 'CORPORATE_ACCOUNT',
+      'CORPORATE_ACCOUNT': 'CORPORATE_ACCOUNT'
+    };
+
+    return paymentMethodMap[normalized] || normalized;
+  };
+
+  // Normalize fulfillment methods from API (French/mixed) to English keys used in the UI
+  const normalizeFulfillmentMethod = (methodValue) => {
+    if (!methodValue) return methodValue;
+
+    const normalized = String(methodValue)
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+
+    const fulfillmentMap = {
+      'sur place': 'Dine-in',
+      'surplace': 'Dine-in',
+      'dine in': 'Dine-in',
+      'dine-in': 'Dine-in',
+      'dinein': 'Dine-in',
+      'a emporter': 'Takeaway',
+      'aemporter': 'Takeaway',
+      'a_emporter': 'Takeaway',
+      'takeaway': 'Takeaway',
+      'livraison': 'Delivery',
+      'delivery': 'Delivery'
+    };
+
+    return fulfillmentMap[normalized] || methodValue;
+  };
+
+  // Z helpers (displayed as YYYYMMDD-<shift> while still filtering by numeric shift)
+  const getRawZ = (order) => {
+    if (!order) return null;
+    const z = order.Z !== undefined && order.Z !== null ? order.Z : order.closureNumber;
+    return z !== undefined && z !== null ? String(z) : null;
+  };
+
+  const formatZ = (rawZ, date) => {
+    if (!rawZ) return null;
+    const str = String(rawZ).trim();
+
+    // If already formatted as YYYYMMDD-<shift>, keep it.
+    if (/^[0-9]{8}-\d+$/.test(str)) return str;
+
+    // If we have a date in YYYYMMDD and a numeric shift, format it.
+    if (typeof date === 'string' && /^[0-9]{8}$/.test(date) && /^[0-9]+$/.test(str)) {
+      const paddedShift = String(Number(str)).padStart(2, '0');
+      return `${date}-${paddedShift}`;
+    }
+
+    return str;
+  };
+
+  const getShiftKey = (order) => {
+    const raw = getRawZ(order);
+    const date = order.Date || order.date;
+    return formatZ(raw, date);
+  };
+
+  const parseShiftKey = (shiftKey) => {
+    if (!shiftKey) return { date: null, shift: null, raw: '' };
+    const str = String(shiftKey);
+    const match = /^([0-9]{4})([0-9]{2})([0-9]{2})-(\d+)$/.exec(str);
+    if (match) {
+      const [, year, month, day, shift] = match;
+      return {
+        date: new Date(Number(year), Number(month) - 1, Number(day)),
+        shift: Number(shift),
+        raw: str,
+      };
+    }
+    const num = parseInt(str, 10);
+    return {
+      date: null,
+      shift: isNaN(num) ? null : num,
+      raw: str,
+    };
+  };
+
+  const sortShiftKeys = (a, b) => {
+    const A = parseShiftKey(a);
+    const B = parseShiftKey(b);
+
+    if (A.date && B.date) {
+      const diff = A.date - B.date;
+      if (diff !== 0) return diff;
+      if (A.shift !== null && B.shift !== null) return A.shift - B.shift;
+      return A.raw.localeCompare(B.raw);
+    }
+
+    if (A.date && !B.date) return 1;
+    if (!A.date && B.date) return -1;
+
+    if (A.shift !== null && B.shift !== null) return A.shift - B.shift;
+    return A.raw.localeCompare(B.raw);
+  };
 
   // Apply dates manually when button is clicked
   const handleApplyDates = (e) => {
@@ -142,23 +276,87 @@ function Dashboard() {
     setOrdersLoading(true);
     setOrdersError(null);
     try {
+      const dateString = formatDateForAPI(orderDate);
       const params = {
         idCRM: storeId,
-        date1: formatDateForAPI(startDate),
-        date2: formatDateForAPI(endDate),
+        date1: dateString,
+        date2: dateString,
         page: ordersPage,
         limit: ordersLimit,
       };
       if (searchTerm) params.search = searchTerm;
-      if (paymentFilter) params.paymentMethod = paymentFilter;
+      // Ensure payment method sent to API is in English
+      if (paymentFilter) params.paymentMethod = normalizePaymentMethod(paymentFilter);
       if (fulfillmentFilter) params.fulfillmentMode = fulfillmentFilter;
+      // Filter by Z field (the actual shift number field)
+      if (shiftFilter) params.Z = shiftFilter;
 
-      console.log("📦 [FETCH_ORDERS] params", params);
+      if (shiftFilter) {
+        console.log(`[Z_FILTER] 🎯 Requesting orders for Z ${shiftFilter} | Params: Z=${params.Z}`);
+      } else {
+        console.log(`[Z_FILTER] No filter - requesting all Z values`);
+      }
+
+      if (paymentFilter) {
+        console.log(`[PAYMENT_FILTER] 🎯 Requesting orders for payment method: ${normalizePaymentMethod(paymentFilter)} (validated: ${params.paymentMethod})`);
+      }
+      
+      if (fulfillmentFilter) {
+        console.log(`[FULFILLMENT_FILTER] 🎯 Requesting orders for fulfillment mode: ${fulfillmentFilter}`);
+      }
+
       const response = await UserService.GetTickets(params);
-      setOrders(response.data || []);
-      setOrdersTotal(response.totalCount || 0);
+      let receivedOrders = response.data || [];
+      
+      // Normalize payment methods in received orders
+      receivedOrders = receivedOrders.map(order => ({
+        ...order,
+        ModePaiement: normalizePaymentMethod(order.ModePaiement),
+        PaymentMethods: Array.isArray(order.PaymentMethods) 
+          ? order.PaymentMethods.map(p => ({
+              ...p,
+              payment_method: normalizePaymentMethod(p.payment_method || p.ModePaiement)
+            }))
+          : order.PaymentMethods
+      }));
+      
+      // Fallback: If backend doesn't support Z filter, apply filter on frontend
+      if (shiftFilter && receivedOrders.length > 0) {
+        const shiftsInResponse = receivedOrders
+          .map(order => getRawZ(order))
+          .filter((value, index, self) => value !== undefined && value !== null && self.indexOf(value) === index);
+
+        // If we got all Z values instead of filtered, apply filter on frontend
+        if (shiftsInResponse.length > 1) {
+          console.log(`⚠️  [Z_FILTER] Backend didn't filter - applying frontend filter for Z ${shiftFilter}`);
+          receivedOrders = receivedOrders.filter(order => {
+            const shift = getRawZ(order);
+            return String(shift) === String(shiftFilter);
+          });
+        }
+      }
+      
+      setOrders(receivedOrders);
+      setOrdersTotal(response.totalCount || receivedOrders.length);
+      
+      // Validate what we're actually displaying
+      if (receivedOrders && receivedOrders.length > 0) {
+        const shiftsInDisplay = receivedOrders
+          .map(order => order.Z !== undefined ? order.Z : order.closureNumber)
+          .filter((value, index, self) => value !== undefined && value !== null && self.indexOf(value) === index)
+          .sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            return isNaN(aNum) || isNaN(bNum) ? 0 : aNum - bNum;
+          });
+        
+        if (shiftFilter) {
+          console.log(`✅ [Z_FILTER] Displaying ${receivedOrders.length} orders from Z ${shiftFilter}`);
+        } else {
+          console.log(`[Z_FILTER] Displaying ${receivedOrders.length} total orders from all Z values: [${shiftsInDisplay.join(', ')}]`);
+        }
+      }
     } catch (err) {
-      console.error("[FETCH_ORDERS] error", err);
       setOrdersError(err?.toString() || "Error fetching orders");
     } finally {
       setOrdersLoading(false);
@@ -168,7 +366,7 @@ function Dashboard() {
   // reload orders when any relevant parameter changes
   useEffect(() => {
     fetchOrders();
-  }, [startDate, endDate, searchTerm, paymentFilter, fulfillmentFilter, ordersPage, ordersLimit]);
+  }, [orderDate, searchTerm, paymentFilter, fulfillmentFilter, shiftFilter, ordersPage, ordersLimit]);
 
   // Function to fetch and display ticket receipt
   const handleViewTicket = async (order) => {
@@ -186,12 +384,11 @@ function Dashboard() {
       const idCRM = storeId; // Use the store ID from cookies
       const url = `${baseUrl}/display-ticket-receipt/${idCRM}/${date}/${ticketId}`;
       
-      console.log("📋 [VIEW_TICKET] Fetching from:", url);
-      console.log("📋 [VIEW_TICKET] Details - idCRM:", idCRM, "Date:", date, "TicketID:", ticketId);
+      console.log(`[VIEW_TICKET] Fetching receipt for ticket ${order.idTiquer} - Shift: ${order.Z || order.closureNumber}`);
+      
       const response = await axios.get(url);
       setTicketContent(response.data);
     } catch (err) {
-      console.error("[VIEW_TICKET] Error fetching ticket:", err);
       setTicketContent(`<div style="padding: 20px; color: red;">Error loading ticket: ${err.message}</div>`);
     } finally {
       setTicketLoading(false);
@@ -217,57 +414,25 @@ function Dashboard() {
 
 
 
-  useEffect(() => {
-    const timestamp = new Date().toLocaleTimeString();
-    renderCount++;
-    console.group(`🚀 [DASHBOARD_MOUNT] ${timestamp} - Render #${renderCount}`);
-    console.log(`Component mounted/re-rendered`);
-    console.log(`Store ID: "${storeId}"`);
-    console.log(`Store Name: "${storeName}"`);
-    console.groupEnd();
-  }, []); // Empty dependency array - runs once on mount
+
 
   useEffect(() => {
-    const effectTimestamp = new Date().toLocaleTimeString();
-    const effectTime = new Date().getTime();
-    const effectId = Math.random().toString(36).substr(2, 9);
-    
-    console.group(`🔄 [EFFECT_TRIGGER:${effectId}] ${effectTimestamp}`);
-    console.log(`Store ID: "${storeId}"`);
-    console.log(`Start date: ${startDate?.toDateString()} (${startDate?.getTime()})`);
-    console.log(`End date: ${endDate?.toDateString()} (${endDate?.getTime()})`);
-    console.log(`Loading state: ${loading}`);
-    console.groupEnd();
-    
     // Update temp dates to match actual dates
     setTempStartDate(startDate);
     setTempEndDate(endDate);
     
     async function fetchStoreMetrics() {
-      const callTimestamp = new Date().toLocaleTimeString();
-      const callId = Math.random().toString(36).substr(2, 9);
-      
-      console.group(`📡 [API_CALL:${callId}] ${callTimestamp}`);
-      console.log(`Effect ID: ${effectId}`);
-      console.log(`Starting fetch...`);
-      
       if (!storeId) {
-        console.warn(`Store ID missing - aborting fetch`);
-        console.groupEnd();
         return;
       }
       
       // Only show loading on initial load, not on date changes
       if (initialLoad.current) {
-        console.log(`Initial load - showing loading state`);
         setLoading(true);
         initialLoad.current = false;
-      } else {
-        console.log(`Date change fetch - silent background update`);
       }
       
       setError(null);
-      console.log(`[API_CALL:${callId}] Error state cleared`);
 
       const apiBase = import.meta.env.VITE_API_URL || "https://api-statistics.makseb.fr";
       const baseUrl = apiBase.replace(/\/$/, "");
@@ -275,116 +440,45 @@ function Dashboard() {
       const date1 = formatDateForAPI(startDate);
       const date2 = formatDateForAPI(endDate);
 
-      console.log(`[API_CALL:${callId}] API Configuration - Base: ${baseUrl}`);
-      console.log(`[API_CALL:${callId}] Date range: ${date1} to ${date2}`);
-
       try {
         // Fetch sales summary (includes revenue and payment methods breakdown)
         const salesUrl = `${baseUrl}/get-sales-summary?idCRM=${encodeURIComponent(storeId)}&date1=${date1}&date2=${date2}`;
-        console.log(`\n${'='.repeat(80)}`);
-        console.log(`[API_CALL:${callId}] 📤 REQUEST INITIATED`);
-        console.log(`  URL: ${salesUrl}`);
-        console.log(`  Store ID: ${storeId}`);
-        console.log(`  Date Range: ${date1} to ${date2}`);
-        
-        const startTime = performance.now();
-        console.log(`[API_CALL:${callId}] Request sent at: ${new Date().toLocaleTimeString()}`);
         
         const salesRes = await axios.get(salesUrl);
         
-        const endTime = performance.now();
-        const duration = (endTime - startTime).toFixed(2);
-        
-        console.log(`\n[API_CALL:${callId}] 📥 RESPONSE RECEIVED`);
-        console.log(`  Duration: ${duration}ms`);
-        console.log(`  HTTP Status: ${salesRes.status}`);
-        console.log(`  Response timestamp: ${new Date().toLocaleTimeString()}`);
-        console.log(`  Content-Type: ${salesRes.headers['content-type']}`);
-        
-        console.log(`\n[API_CALL:${callId}] Full response body:`);
-        console.log(JSON.stringify(salesRes.data, null, 2));
-        
         const salesData = salesRes.data?.data;
-        console.log(`\n[API_CALL:${callId}] Extracted salesData (data.data):`);
-        console.log(`  Type: ${typeof salesData}`);
-        console.log(`  Is null? ${salesData === null}`);
-        console.log(`  Is undefined? ${salesData === undefined}`);
-        if (salesData) {
-          console.log(`  Keys: ${Object.keys(salesData).join(', ')}`);
-          console.log(`  Full value:`, salesData);
-        }
 
         if (!salesData) {
-          console.error(`[API_CALL:${callId}] ❌ NO DATA FIELD IN RESPONSE`);
           throw new Error("No data field in response");
         }
 
-        // Extract ChiffreAffaire FIRST - log it immediately
-        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING CHIFFREAFFAIRE`);
         const chiffreAffaire = salesData.ChiffreAffaire;
-        console.log(`  Exists? ${!!chiffreAffaire}`);
-        console.log(`  Type: ${typeof chiffreAffaire}`);
-        if (chiffreAffaire) {
-          console.log(`  Keys: ${Object.keys(chiffreAffaire).join(', ')}`);
-          console.log(`  Total_TTC: ${chiffreAffaire.Total_TTC} (type: ${typeof chiffreAffaire.Total_TTC})`);
-          console.log(`  Total_HT: ${chiffreAffaire.Total_HT} (type: ${typeof chiffreAffaire.Total_HT})`);
-          console.log(`  Total_TVA: ${chiffreAffaire.Total_TVA} (type: ${typeof chiffreAffaire.Total_TVA})`);
-          console.log(`  Full value:`, chiffreAffaire);
-        }
-
-        // Extract and analyze product data
-        console.log(`\n[API_CALL:${callId}] 🔍 ANALYZING SALES DATA`);
-        console.log(`  All keys in salesData: ${Object.keys(salesData).join(', ')}`);
-        console.log(`  ProduitDetailler exists? ${!!salesData.ProduitDetailler}`);
-        if (salesData.ProduitDetailler) {
-          console.log(`  ProduitDetailler type: ${typeof salesData.ProduitDetailler}`);
-          console.log(`  ProduitDetailler keys: ${Object.keys(salesData.ProduitDetailler).join(', ')}`);
-          console.log(`  Full ProduitDetailler:`, salesData.ProduitDetailler);
-        }
-        
         const productData = {};
 
         // Check for product details in the response
         if (salesData.ProduitDetailler && typeof salesData.ProduitDetailler === 'object') {
-          console.log(`\n[API_CALL:${callId}] ✅ Product details found - processing ${Object.keys(salesData.ProduitDetailler).length} products`);
-          
-          Object.entries(salesData.ProduitDetailler).forEach(([productName, details], idx) => {
-            console.log(`  Product ${idx + 1}: "${productName}"`);
-            console.log(`    Details: ${JSON.stringify(details)}`);
-            
+          Object.entries(salesData.ProduitDetailler).forEach(([productName, details]) => {
             if (details && typeof details === 'object') {
-              console.log(`    Details keys: ${Object.keys(details).join(', ')}`);
-              
               // Extract amount - try multiple field names
               let amount = 0;
-              let foundField = null;
-              
               const fieldNames = ['Somme', 'Total_TTC', 'TotalTTC', 'total', 'amount', 'Montant', 'MontantTTC', 'montantTTC'];
               for (const field of fieldNames) {
                 if (details[field] !== undefined) {
                   amount = parseFloat(details[field]) || 0;
-                  foundField = field;
                   break;
                 }
               }
               
               const quantity = details.Quantite || details.Qty || details.Count || 0;
               
-              console.log(`[API_CALL:${callId}]      Amount: ${amount} (from field: ${foundField})`);
-              console.log(`[API_CALL:${callId}]      Quantity: ${quantity}`);
-              
               productData[productName] = {
                 name: productName,
                 amount: parseFloat(amount) || 0,
                 quantity: parseInt(quantity) || 0
               };
-            } else {
-              console.log(`[API_CALL:${callId}] Warning: Details object malformed`);
             }
           });
         }
-
-        console.log(`[API_CALL:${callId}] Summary: Found ${Object.keys(productData).length} products`);
 
         // Calculate total product sales and sort
         const totalProductSales = Object.values(productData).reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -396,32 +490,18 @@ function Dashboard() {
           }))
           .sort((a, b) => b.amount - a.amount);
 
-        console.log(`[API_CALL:${callId}] Products sorted by revenue`);
-
         // Get top 5 and bottom 5
         const top5 = sortedProducts.slice(0, 5);
         const bottom5 = sortedProducts.slice(-5).reverse();
 
-        console.log(`[API_CALL:${callId}] Top 5 products loaded`);
-        console.log(`[API_CALL:${callId}] Bottom 5 products loaded`);
-        console.log(`[API_CALL:${callId}] Calling setTopProducts and setBottomProducts`);
-
         setTopProducts(top5);
         setBottomProducts(bottom5);
-
-
 
         // Build payment methods breakdown from modePaiement
         const paymentMethods = {};
         let totalPaymentAmount = 0;
         
-        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING PAYMENT METHODS`);
-        console.log(`  modePaiement exists? ${!!salesData.modePaiement}`);
         if (salesData.modePaiement) {
-          console.log(`  modePaiement type: ${typeof salesData.modePaiement}`);
-          console.log(`  modePaiement keys: ${Object.keys(salesData.modePaiement).join(', ')}`);
-          console.log(`  Full modePaiement:`, salesData.modePaiement);
-          
           Object.entries(salesData.modePaiement).forEach(([method, amount]) => {
             const cleanAmount = parseFloat(amount) || 0;
             paymentMethods[method] = {
@@ -430,68 +510,37 @@ function Dashboard() {
               average: 0,
             };
             totalPaymentAmount += cleanAmount;
-            console.log(`    ${method}: ${cleanAmount}`);
           });
-          console.log(`  Total payment methods: ${Object.keys(paymentMethods).length}`);
-          console.log(`  Total payment amount: ${totalPaymentAmount}`);
         }
 
-        // Build fulfillment methods breakdown from modeConsommation
+        // Build fulfillment methods breakdown from modeConsommation (normalize French/English keys)
         const fulfillmentMethods = {};
-        console.log(`\n[API_CALL:${callId}] 🔍 EXTRACTING FULFILLMENT METHODS`);
-        console.log(`  modeConsommation exists? ${!!salesData.modeConsommation}`);
         if (salesData.modeConsommation && typeof salesData.modeConsommation === 'object') {
-          console.log(`  modeConsommation type: ${typeof salesData.modeConsommation}`);
-          console.log(`  modeConsommation keys: ${Object.keys(salesData.modeConsommation).join(', ')}`);
-          console.log(`  Full modeConsommation:`, salesData.modeConsommation);
-          
           Object.entries(salesData.modeConsommation).forEach(([method, amount]) => {
             const cleanAmount = parseFloat(amount) || 0;
-            fulfillmentMethods[method] = {
-              amount: cleanAmount,
+            const normalized = normalizeFulfillmentMethod(method);
+            fulfillmentMethods[normalized] = {
+              amount: (fulfillmentMethods[normalized]?.amount || 0) + cleanAmount,
             };
-            console.log(`    ${method}: ${cleanAmount}`);
           });
-          console.log(`  Total fulfillment methods: ${Object.keys(fulfillmentMethods).length}`);
         }
 
         // Extract total revenue from ChiffreAffaire
-        console.log(`\n[API_CALL:${callId}] 💰 COMPUTING REVENUE`);
         const totalTTC = salesData.ChiffreAffaire?.Total_TTC || 0;
         const totalHT = salesData.ChiffreAffaire?.Total_HT || 0;
         const devise = salesData.devise || "€";
         
-        console.log(`  Raw Total_TTC: ${totalTTC} (type: ${typeof totalTTC})`);
-        console.log(`  Raw Total_HT: ${totalHT} (type: ${typeof totalHT})`);
-        console.log(`  Currency: ${devise}`);
-        
         const totalRevenue = `${parseFloat(totalTTC).toFixed(2)}${devise}`;
-        console.log(`  Formatted Total Revenue: ${totalRevenue}`);
         
         // Calculate taxes (TTC - HT)
         const taxAmount = parseFloat(totalTTC) - parseFloat(totalHT);
         const totalTaxes = `${parseFloat(taxAmount).toFixed(2)}${devise}`;
         const totalExcludingTax = `${parseFloat(totalHT).toFixed(2)}${devise}`;
         
-        console.log(`  Tax Amount: ${taxAmount}`);
-        console.log(`  Formatted Taxes: ${totalTaxes}`);
-        console.log(`  Formatted Tax Exclusive: ${totalExcludingTax}`);
-        
         // Count total orders from payment methods or etat tiquet
-        console.log(`\n[API_CALL:${callId}] 📊 COMPUTING ORDER COUNT`);
         const etatTiquerEncaiser = salesData.EtatTiquer?.Encaiser || 0;
-        console.log(`  EtatTiquer.Encaiser: ${etatTiquerEncaiser}`);
         
         const totalOrdersCount = Object.values(paymentMethods).reduce((sum, method) => sum + (method.count || 0), 0) || etatTiquerEncaiser;
-        console.log(`  Total Orders Count: ${totalOrdersCount}`);
-
-        console.log(`\n[API_CALL:${callId}] 📋 EXTRACTED DATA SUMMARY`);
-        console.log(`  Revenue: ${totalRevenue}`);
-        console.log(`  Taxes: ${totalTaxes}`);
-        console.log(`  Tax Exclusive: ${totalExcludingTax}`);
-        console.log(`  Total products: ${Object.keys(productData).length}`);
-        console.log(`  Payment methods: ${Object.keys(paymentMethods).length}`);
-        console.log(`  Fulfillment methods: ${Object.keys(fulfillmentMethods).length}`);
 
         const mapped = {
           totalStores: storeId ? 1 : stats.totalStores,
@@ -505,59 +554,21 @@ function Dashboard() {
           fulfillmentMethods: fulfillmentMethods,
           devise: devise,
         };
-
-        console.log(`\n[API_CALL:${callId}] 📌 MAPPED STATS OBJECT`);
-        console.log(JSON.stringify(mapped, null, 2));
-
-        console.log(`\n[API_CALL:${callId}] 🔐 CALLING STATE UPDATES`);
-        console.log(`  Calling setStats with:`);
-        console.log(`    totalSales: ${mapped.totalSales}`);
-        console.log(`    taxes: ${mapped.taxes}`);
-        console.log(`    taxExclusive: ${mapped.taxExclusive}`);
-        console.log(`    totalOrders: ${mapped.totalOrders}`);
         
         setStats((s) => { 
-          const newStats = { ...s, ...mapped };
-          console.log(`\n[API_CALL:${callId}] ✅ setStats callback executed`);
-          console.log(`  Previous state totalSales: ${s.totalSales}`);
-          console.log(`  New state totalSales: ${newStats.totalSales}`);
-          console.log(`  Previous state taxes: ${s.taxes}`);
-          console.log(`  New state taxes: ${newStats.taxes}`);
-          return newStats;
+          return { ...s, ...mapped };
         });
         
-        console.log(`[API_CALL:${callId}] Calling setApiData`);
         setApiData(salesData);
-        console.log(`[API_CALL:${callId}] ✅ State updates queued`);
-        console.log(`${'='.repeat(80)}\n`);
       } catch (err) {
-        console.error(`\n[API_CALL:${callId}] ❌ ERROR CAUGHT`);
-        console.error(`  Message: ${err.message}`);
-        console.error(`  Code: ${err.code}`);
-        console.error(`  Response status: ${err.response?.status}`);
-        console.error(`  Full error:`, err);
-        console.log(`[API_CALL:${callId}] Calling setError`);
         setError(`Failed to load store metrics: ${err.message}`);
-        console.log(`[API_CALL:${callId}] Calling setDailySalesData with empty array`);
         setDailySalesData([]);
-        console.log(`${'='.repeat(80)}\n`);
       } finally {
-        console.log(`[API_CALL:${callId}] Finally block - calling setLoading(false)`);
         setLoading(false);
-        console.groupEnd();
       }
     }
 
-    console.log(`[DASHBOARD] Fetching metrics`);
     fetchStoreMetrics();
-    
-    // Log effect cleanup
-    return () => {
-      console.group(`🧹 [EFFECT_CLEANUP:${effectId}]`);
-      console.log(`Cleaning up effect ${effectId}`);
-      console.log(`Effect will re-run when dependencies change: storeId, startDate, endDate`);
-      console.groupEnd();
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId, startDate, endDate]);
 
@@ -978,15 +989,29 @@ function Dashboard() {
             placeholder={t('dashboard.searchOrders')}
             className="border p-2 rounded w-full sm:w-auto"
           />
+          <input
+            type="date"
+            value={orderDate.toISOString().split('T')[0]}
+            onChange={(e) => {
+              const newDate = new Date(e.target.value);
+              setOrderDate(newDate);
+              setOrdersPage(1);
+            }}
+            className="border p-2 rounded"
+          />
           <select
             value={paymentFilter}
             onChange={(e) => { setPaymentFilter(e.target.value); setOrdersPage(1); }}
             className="border p-2 rounded"
           >
             <option value="">{t('dashboard.paymentFilter')}</option>
-            <option value="CARD">Card</option>
-            <option value="CASH">Cash</option>
-            <option value="TICKET_RESTO">Meal Voucher</option>
+            <option value="CARD">{t('paymentMethods.card')}</option>
+            <option value="CASH">{t('paymentMethods.cash')}</option>
+            <option value="MEAL_VOUCHER">{t('paymentMethods.mealVoucher')}</option>
+            <option value="CHECK">{t('paymentMethods.check')}</option>
+            <option value="FIDELITY_POINTS">{t('paymentMethods.fidelityPoints')}</option>
+            <option value="STORE_CREDIT">{t('paymentMethods.storeCredit')}</option>
+            <option value="CORPORATE_ACCOUNT">{t('paymentMethods.corporateAccount')}</option>
           </select>
           <select
             value={fulfillmentFilter}
@@ -997,6 +1022,44 @@ function Dashboard() {
             <option value="Dine-in">{t('fulfillmentMethods.dineIn')}</option>
             <option value="Takeaway">{t('fulfillmentMethods.takeaway')}</option>
             <option value="Delivery">{t('fulfillmentMethods.delivery')}</option>
+          </select>
+          <select
+            value={shiftFilter}
+            onChange={(e) => {
+              const newShift = e.target.value;
+              const availableShifts = [];
+              const seen = new Set();
+              orders.forEach(order => {
+                const raw = getRawZ(order);
+                if (!raw || seen.has(raw)) return;
+                seen.add(raw);
+                availableShifts.push(getShiftKey(order));
+              });
+              const sortedAvailable = availableShifts.sort(sortShiftKeys).join(', ');
+              console.log(`[Z_FILTER] User selected Z: ${newShift || 'ALL'} | Available: [${sortedAvailable}]`);
+              setShiftFilter(newShift);
+              setOrdersPage(1);
+            }}
+            className="border p-2 rounded"
+          >
+            <option value="">Filter by Z</option>
+            {orders.length > 0 && (() => {
+              const options = [];
+              const seen = new Set();
+              orders.forEach(order => {
+                const raw = getRawZ(order);
+                if (!raw || seen.has(raw)) return;
+                seen.add(raw);
+                options.push({ raw, formatted: getShiftKey(order) });
+              });
+              return options
+                .sort((a, b) => sortShiftKeys(a.formatted, b.formatted))
+                .map((opt) => (
+                  <option key={opt.raw} value={opt.raw}>
+                    Z {opt.formatted}
+                  </option>
+                ));
+            })()}
           </select>
         </div>
 
@@ -1009,6 +1072,7 @@ function Dashboard() {
                 <th className="px-3 py-2 text-left">{t('common.time')}</th>
                 <th className="px-3 py-2 text-left">{t('dashboard.customer')}</th>
                 <th className="px-3 py-2 text-right">{t('dashboard.orderTotal')}</th>
+                <th className="px-3 py-2 text-left">Z</th>
                 <th className="px-3 py-2 text-left">{t('dashboard.paymentFilter')}</th>
                 <th className="px-3 py-2 text-left">{t('dashboard.fulfillmentFilter')}</th>
                 <th className="px-3 py-2 text-center">{t('common.actions')}</th>
@@ -1049,12 +1113,34 @@ function Dashboard() {
                       <td className="px-3 py-2 text-right">
                         {order.TTC != null ? `€ ${order.TTC.toFixed(2)}` : ''}
                       </td>
+                      <td className="px-3 py-2 font-semibold text-blue-600">
+                        {(() => {
+                          const shiftKey = getShiftKey(order);
+                          return shiftKey ? `Z ${shiftKey}` : '-';
+                        })()}
+                      </td>
                       <td className="px-3 py-2">
                         {order.PaymentMethods
-                          ? order.PaymentMethods.map(p => p.payment_method || p.ModePaimeent).join(', ')
-                          : (order.ModePaiement && Array.isArray(order.ModePaiement) ? order.ModePaiement.map(p => p.ModePaimeent).join(', ') : order.ModePaiement || '')}
+                          ? order.PaymentMethods.map(p => {
+                              const method = p.payment_method || p.ModePaiement || '';
+                              const methodInfo = paymentMethodLabels[method];
+                              return methodInfo ? methodInfo.label : method;
+                            }).join(', ')
+                          : (order.ModePaiement && Array.isArray(order.ModePaiement) 
+                              ? order.ModePaiement.map(p => {
+                                  const method = p.ModePaiement || '';
+                                  const methodInfo = paymentMethodLabels[method];
+                                  return methodInfo ? methodInfo.label : method;
+                                }).join(', ') 
+                              : (paymentMethodLabels[order.ModePaiement] ? paymentMethodLabels[order.ModePaiement].label : order.ModePaiement || ''))}
                       </td>
-                      <td className="px-3 py-2">{order.ModeConsomation || order.ConsumptionMode || ''}</td>
+                      <td className="px-3 py-2">
+                        {(() => {
+                          const raw = order.ModeConsomation || order.ConsumptionMode || '';
+                          const normalized = normalizeFulfillmentMethod(raw);
+                          return fulfillmentMethodLabels[normalized]?.label || raw;
+                        })()}
+                      </td>
                       <td className="px-3 py-2 text-center">
                         <button
                           onClick={() => handleViewTicket(order)}

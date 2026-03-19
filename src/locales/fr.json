@@ -204,6 +204,7 @@
     "percentOfTotal": "% du total"
   },
   "paymentMethods": {
+    "card": "Carte",
     "cardPayment": "Paiement par Carte",
     "cash": "Espèces",
     "mealVoucher": "Ticket Restaurant",
@@ -211,6 +212,9 @@
     "bankTransfer": "Virement Bancaire",
     "mobileWallet": "Portefeuille Mobile",
     "check": "Chèque",
+    "fidelityPoints": "Points de fidélité",
+    "storeCredit": "Crédit Magasin",
+    "corporateAccount": "Compte Client",
     "cryptocurrency": "Cryptomonnaie",
     "CARTE_BANCAIRE": "Carte Bancaire",
     "ESPECE": "Espèces",

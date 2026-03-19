@@ -1,10 +1,11 @@
 import Dashboard from "./views/Dashboard";
+import ShiftsList from "./views/ShiftsList";
 import ScreenHome from "./views/ScreenHome";
 import Logout from "./views/Logout";
 import Profil from "./views/Profil";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
-import { BarChart3, Users, Settings, LogOut } from "lucide-react";
+import { BarChart3, Users, Settings, LogOut, Clock } from "lucide-react";
 
 const token = Cookies.get("access_token");
 const decoded = token ? jwtDecode(token) : "";
@@ -36,6 +37,13 @@ if (decoded.Role === "admin") {
       layout: "/admin",
     },
     {
+      path: "/shifts",
+      name: "Shifts",
+      icon: <Clock size={20} />,
+      component: <ShiftsList />,
+      layout: "/admin",
+    },
+    {
       path: "/logout",
       name: "Logout",
       icon: <LogOut size={20} />,
@@ -51,6 +59,13 @@ if (decoded.Role === "admin") {
       name: "Statistics",
       icon: <BarChart3 size={20} />,
       component: <Dashboard />,
+      layout: "/admin",
+    },
+    {
+      path: "/shifts",
+      name: "Shifts",
+      icon: <Clock size={20} />,
+      component: <ShiftsList />,
       layout: "/admin",
     },
     {
@@ -76,6 +91,13 @@ if (decoded.Role === "admin") {
       name: "Statistics",
       icon: <BarChart3 size={20} />,
       component: <Dashboard />,
+      layout: "/admin",
+    },
+    {
+      path: "/shifts",
+      name: "Shifts",
+      icon: <Clock size={20} />,
+      component: <ShiftsList />,
       layout: "/admin",
     },
     {

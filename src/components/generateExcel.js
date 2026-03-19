@@ -9,7 +9,8 @@ const formatValue = (value, devise) => {
 };
 
 const replaceUnderscores = (str) => {
-    return str.replace(/_/g, " ");
+    if (!str) return '';
+    return String(str).replace(/_/g, ' ');
 };
 
 const translateTicketStatus = (status, t) => {
@@ -21,22 +22,116 @@ const translateTicketStatus = (status, t) => {
     return translations[status] || status;
 };
 
+const normalizeTranslationKey = (key) => {
+    if (!key) return '';
+    return String(key)
+        .trim()
+        .replace(/\s+/g, '_')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+};
+
+const mapPaymentMethodToKey = (method) => {
+    if (!method) return '';
+    const normalized = String(method)
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_')
+        .toUpperCase();
+
+    const mapping = {
+        'CARTE_BANCAIRE': 'card',
+        'CARD': 'card',
+        'ESPECE': 'cash',
+        'ESPECES': 'cash',
+        'CASH': 'cash',
+        'TICKET_RESTO': 'mealVoucher',
+        'MEAL_VOUCHER': 'mealVoucher',
+        'CHÈQUE': 'check',
+        'CHEQUE': 'check',
+        'CHECK': 'check',
+        'POINTS_FIDELITE': 'fidelityPoints',
+        'POINTS_FIDÉLITÉ': 'fidelityPoints',
+        'FIDELITY_POINTS': 'fidelityPoints',
+        'AVOIR': 'storeCredit',
+        'STORE_CREDIT': 'storeCredit',
+        'CLIENT_EN_COMPTE': 'corporateAccount',
+        'CORPORATE_ACCOUNT': 'corporateAccount',
+    };
+
+    return mapping[normalized] || normalized.toLowerCase();
+};
+
+const mapConsumptionMethodToKey = (method) => {
+    if (!method) return '';
+    const normalized = String(method)
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
+
+    const mapping = {
+        'sur place': 'dineIn',
+        'surplace': 'dineIn',
+        'dine in': 'dineIn',
+        'dine-in': 'dineIn',
+        'dinein': 'dineIn',
+        'a emporter': 'takeaway',
+        'aemporter': 'takeaway',
+        'takeaway': 'takeaway',
+        'livraison': 'delivery',
+        'delivery': 'delivery',
+    };
+
+    return mapping[normalized] || normalized;
+};
+
 const translatePaymentMethod = (method, t) => {
-    // Normalize the method name (replace spaces with underscores)
-    const normalizedMethod = method.replace(/\s+/g, '_');
-    const translationKey = `paymentMethods.${normalizedMethod}`;
-    const translated = t(translationKey);
-    // If translation key doesn't exist, fall back to original
-    return translated !== translationKey ? translated : method;
+    if (!method) return '';
+
+    const key = mapPaymentMethodToKey(method);
+    const translationKey = `paymentMethods.${key}`;
+    const translation = t(translationKey);
+
+    if (translation && translation !== translationKey) {
+        return translation;
+    }
+
+    const fallbackLabels = {
+        card: 'Card',
+        cash: 'Cash',
+        mealVoucher: 'Meal Voucher',
+        check: 'Check',
+        fidelityPoints: 'Fidelity Points',
+        storeCredit: 'Store Credit',
+        corporateAccount: 'Corporate Account',
+    };
+
+    return fallbackLabels[key] || replaceUnderscores(method);
 };
 
 const translateConsumptionMethod = (method, t) => {
-    // Normalize the method name (replace spaces with underscores)
-    const normalizedMethod = method.replace(/\s+/g, '_');
-    const translationKey = `consumptionMethods.${normalizedMethod}`;
-    const translated = t(translationKey);
-    // If translation key doesn't exist, fall back to replaceUnderscores
-    return translated !== translationKey ? translated : replaceUnderscores(method);
+    if (!method) return '';
+
+    const key = mapConsumptionMethodToKey(method);
+    const translationKey = `consumptionMethods.${key}`;
+    const translation = t(translationKey);
+
+    if (translation && translation !== translationKey) {
+        return translation;
+    }
+
+    const fallbackLabels = {
+        dineIn: 'Dine In',
+        takeaway: 'Takeaway',
+        delivery: 'Delivery',
+    };
+
+    return fallbackLabels[key] || replaceUnderscores(method);
 };
 
 function formatDate(dateString) {

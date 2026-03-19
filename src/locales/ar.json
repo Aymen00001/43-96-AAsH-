@@ -205,6 +205,7 @@
     "dailySummary": "الملخص اليومي"
   },
   "paymentMethods": {
+    "card": "بطاقة",
     "cardPayment": "بطاقة بنكية",
     "cash": "نقد",
     "mealVoucher": "قسيمة الوجبة",
@@ -212,6 +213,9 @@
     "bankTransfer": "تحويل بنكي",
     "mobileWallet": "محفظة رقمية",
     "check": "شيك",
+    "fidelityPoints": "نقاط الولاء",
+    "storeCredit": "رصيد المتجر",
+    "corporateAccount": "حساب الشركة",
     "cryptocurrency": "العملات الرقمية",
     "CARTE_BANCAIRE": "بطاقة بنكية",
     "ESPECE": "نقد",
